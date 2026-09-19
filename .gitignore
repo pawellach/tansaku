@@ -1,0 +1,11 @@
+config.yaml
+knowledge-base.json
+team.json
+*.log
+*.pyc
+__pycache__/
+.env
+.venv/
+venv/
+dist/
+*.egg-info/

@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "Domain-specific rules for Tansaku intake analysis. Edit to match your project."
+  },
+  "facts": [
+    "All reports come from internal team members, never external customers directly.",
+    "All issues refer to the production environment unless explicitly stated otherwise.",
+    "Do not ask about the environment — assume production."
+  ],
+  "bad_questions": {
+    "never_ask": [
+      "Which environment does this occur in?",
+      "Is this a regression?",
+      "Can you try clearing the cache?"
+    ],
+    "exceptions": [
+      "Asking about cache is acceptable when the issue involves an external OAuth/SSO connection (e.g. DocuSign, SSO iframe)."
+    ]
+  },
+  "fix_strategy": {
+    "threshold_minutes": 30,
+    "below_threshold": "Implement the systemic fix now AND fix this specific case immediately.",
+    "above_threshold": "Apply a quick workaround for this case now AND open a new ticket for the systemic fix."
+  },
+  "module_patterns": [
+    {
+      "keywords": ["quote", "pricing", "cpq", "subscription"],
+      "suggested_assignee_role": "CPQ specialist"
+    },
+    {
+      "keywords": ["ui", "lwc", "component", "store", "frontend"],
+      "suggested_assignee_role": "Frontend developer"
+    }
+  ],
+  "learned_patterns": []
+}

@@ -1,0 +1,52 @@
+jira:
+  base_url: "https://yourcompany.atlassian.net"
+  email: "you@company.com"
+  api_token: "${JIRA_API_TOKEN}"
+  project: "PROJ"
+
+anthropic:
+  api_key: "${ANTHROPIC_API_KEY}"
+  model: "claude-opus-4-5-20251101"
+  max_tokens: 8096
+
+notification:
+  channel: "telegram"   # "telegram" or "slack" or "none"
+
+  telegram:
+    bot_token: "${TELEGRAM_BOT_TOKEN}"
+    chat_id: "${TELEGRAM_CHAT_ID}"
+
+  slack:
+    bot_token: "${SLACK_BOT_TOKEN}"
+    channel: "#intake"
+
+intake:
+  auto_close_days: 5
+  max_batch: 5
+  label: "ai-intake"
+  time_window_hours: 2
+
+  transitions:
+    waiting: "41"
+    in_progress: "21"
+    rejected: "61"
+
+  statuses_to_skip:
+    - "Waiting"
+    - "In test"
+    - "In Progress"
+
+  language: "en"   # "en" or "pl" — language for AI comments
+
+confluence:
+  enabled: true
+  spaces:
+    - "PROJ"
+    - "ENG"
+
+# Optional: path to a JSON file with domain-specific rules.
+# Copy knowledge-base.example.json and edit.
+knowledge_base: "./knowledge-base.json"
+
+# Optional: path to a JSON file mapping keywords → team members.
+team: "./team.json"
