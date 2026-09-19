@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tansaku — AI Jira Intake Agent</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0D0F12;
+    --surface: #161A20;
+    --surface2: #1C2128;
+    --accent:  #7C6FF7;
+    --accent2: #A78BFA;
+    --text:    #E8EAF0;
+    --muted:   #6B7280;
+    --border:  #232830;
+    --green:   #4ADE80;
+    --orange:  #FB923C;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  a { color: var(--accent2); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container { max-width: 780px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav { border-bottom: 1px solid var(--border); padding: 18px 0; }
+  nav .container { display: flex; justify-content: space-between; align-items: center; }
+  .nav-brand {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; color: var(--accent2); font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-kanji { font-size: 18px; opacity: 0.7; }
+  .nav-links { display: flex; gap: 24px; }
+  .nav-links a { color: var(--muted); font-size: 14px; }
+  .nav-links a:hover { color: var(--text); text-decoration: none; }
+
+  /* Hero */
+  .hero { padding: 80px 0 64px; border-bottom: 1px solid var(--border); }
+  .hero-eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--accent);
+    letter-spacing: 2px; text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: inline-block; width: 24px; height: 1px;
+    background: var(--accent); flex-shrink: 0;
+  }
+  .hero-kanji {
+    font-size: clamp(56px, 10vw, 88px);
+    line-height: 1; opacity: 0.08;
+    position: absolute; right: 24px; top: 0;
+    pointer-events: none; user-select: none;
+  }
+  .hero-title-wrap { position: relative; }
+  h1 { font-size: clamp(28px, 5vw, 44px); font-weight: 600; line-height: 1.15; margin-bottom: 20px; }
+  h1 span { color: var(--accent2); }
+  .hero-sub { font-size: 18px; color: var(--muted); max-width: 540px; margin-bottom: 36px; }
+  .badge-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 36px; }
+  .badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; padding: 4px 10px; border-radius: 20px;
+    border: 1px solid var(--border); color: var(--muted);
+  }
+  .badge.green { border-color: rgba(74,222,128,0.3); color: var(--green); background: rgba(74,222,128,0.07); }
+  .badge.purple { border-color: rgba(124,111,247,0.3); color: var(--accent2); background: rgba(124,111,247,0.07); }
+  .badge.orange { border-color: rgba(251,146,60,0.3); color: var(--orange); background: rgba(251,146,60,0.07); }
+  .cta-group { display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn-primary {
+    background: var(--accent); color: #fff;
+    font-weight: 600; padding: 10px 22px; border-radius: 6px; font-size: 14px;
+    transition: background 0.15s;
+  }
+  .btn-primary:hover { background: var(--accent2); text-decoration: none; }
+  .btn-secondary {
+    background: transparent; color: var(--text);
+    border: 1px solid var(--border); padding: 10px 22px; border-radius: 6px; font-size: 14px;
+    transition: border-color 0.15s;
+  }
+  .btn-secondary:hover { border-color: var(--muted); text-decoration: none; }
+
+  /* Sections shared */
+  section { padding: 64px 0; border-bottom: 1px solid var(--border); }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 32px;
+  }
+  h2 { font-size: 22px; margin-bottom: 24px; }
+
+  /* Steps / flow */
+  .flow { display: flex; flex-direction: column; gap: 0; }
+  .flow-item {
+    display: flex; gap: 20px; align-items: flex-start;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .flow-item:last-child { border-bottom: none; }
+  .flow-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; font-weight: 600;
+    color: var(--accent);
+    background: rgba(124,111,247,0.1);
+    border: 1px solid rgba(124,111,247,0.25);
+    border-radius: 4px;
+    padding: 3px 8px;
+    flex-shrink: 0; margin-top: 2px;
+    min-width: 36px; text-align: center;
+  }
+  .flow-body h3 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .flow-body p { font-size: 14px; color: var(--muted); }
+  .flow-body code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--accent2);
+    background: rgba(124,111,247,0.1);
+    padding: 1px 5px; border-radius: 3px;
+  }
+
+  /* Terminal / code blocks */
+  .terminal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+  .terminal .prompt { color: var(--accent); user-select: none; }
+  .terminal .comment { color: var(--muted); }
+  .terminal .hi { color: var(--accent2); }
+  .terminal .ok { color: var(--green); }
+  .terminal .dim { color: #3D4451; }
+  .terminal-header {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 16px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; }
+  .dot-red { background: #FF5F57; }
+  .dot-yellow { background: #FFBD2E; }
+  .dot-green { background: #28CA41; }
+  .terminal-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted);
+    margin-left: auto;
+  }
+  pre.yaml {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.8;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .yaml-key { color: var(--accent2); }
+  .yaml-val { color: var(--green); }
+  .yaml-comment { color: var(--muted); }
+  .yaml-env { color: var(--orange); }
+
+  /* Notifier cards */
+  .notifier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .notifier-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .notifier-card.recommended { border-color: rgba(124,111,247,0.4); }
+  .notifier-card.recommended::before {
+    content: 'recommended';
+    position: absolute; top: 16px; right: 16px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--accent); background: rgba(124,111,247,0.12);
+    border: 1px solid rgba(124,111,247,0.25);
+    padding: 2px 8px; border-radius: 4px;
+  }
+  .notifier-icon { font-size: 32px; margin-bottom: 16px; }
+  .notifier-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 8px; }
+  .notifier-card p { font-size: 14px; color: var(--muted); margin-bottom: 16px; }
+  .notifier-card ul { list-style: none; }
+  .notifier-card li {
+    font-size: 13px; color: var(--muted); padding: 3px 0;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .notifier-card li::before { content: '✓'; color: var(--green); font-size: 11px; }
+
+  /* Telegram mock */
+  .tg-mock {
+    background: #17212B;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 20px;
+    font-size: 13px;
+  }
+  .tg-msg { background: #1F2B38; border-radius: 8px; padding: 12px 14px; margin-bottom: 10px; }
+  .tg-bot-name { color: #7CB8FF; font-weight: 600; font-size: 12px; margin-bottom: 6px; }
+  .tg-text { color: #D4D8DD; line-height: 1.6; }
+  .tg-text strong { color: #fff; }
+  .tg-buttons { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .tg-btn {
+    background: #2B5278;
+    color: #7CB8FF;
+    font-size: 12px; padding: 6px 12px;
+    border-radius: 6px; cursor: pointer;
+  }
+
+  /* Install section */
+  .install-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 32px; }
+  .install-option {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 24px;
+  }
+  .install-option h3 { font-size: 15px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* Footer */
+  footer {
+    padding: 48px 0;
+    border-top: 1px solid var(--border);
+  }
+  footer .container { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+  .footer-brand { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--muted); }
+  .footer-links { display: flex; gap: 20px; }
+  .footer-links a { color: var(--muted); font-size: 14px; }
+
+  @media (max-width: 600px) {
+    .nav-links { display: none; }
+    .hero { padding: 52px 0 44px; }
+    footer .container { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <div class="nav-brand">
+      <span class="nav-kanji">探</span>
+      tansaku
+    </div>
+    <div class="nav-links">
+      <a href="#how-it-works">How it works</a>
+      <a href="#quickstart">Quickstart</a>
+      <a href="#notify">Notifications</a>
+      <a href="#config">Config</a>
+      <a href="https://github.com/pawellach/tansaku">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<main>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="container">
+      <div class="hero-title-wrap">
+        <div class="hero-kanji">探索</div>
+        <div class="hero-eyebrow">探索 — tansaku</div>
+        <h1>AI-powered <span>Jira triage</span><br>agent. Self-hostable.</h1>
+      </div>
+      <p class="hero-sub">
+        Tansaku watches your Jira project, analyzes new issues with Claude AI,
+        writes technical comments, and asks you to assign via Telegram or Slack —
+        with inline buttons.
+      </p>
+      <div class="badge-row">
+        <span class="badge purple">Telegram</span>
+        <span class="badge purple">Slack</span>
+        <span class="badge green">Any Jira Cloud</span>
+        <span class="badge green">GitHub Actions</span>
+        <span class="badge orange">Self-hostable</span>
+        <span class="badge">Python 3.10+</span>
+      </div>
+      <div class="cta-group">
+        <a href="https://github.com/pawellach/tansaku" class="btn-primary">View on GitHub</a>
+        <a href="#quickstart" class="btn-secondary">Quickstart →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- How it works -->
+  <section id="how-it-works">
+    <div class="container">
+      <div class="section-label">How it works</div>
+      <div class="flow">
+
+        <div class="flow-item">
+          <div class="flow-num">01</div>
+          <div class="flow-body">
+            <h3>Fetch new issues</h3>
+            <p>Queries your Jira project on a schedule (GitHub Actions cron or self-hosted cron) for issues created in the last 2 hours that haven't been processed yet. Idempotent — skips issues with the <code>ai-intake</code> label.</p>
+          </div>
+        </div>
+
+        <div class="flow-item">
+          <div class="flow-num">02</div>
+          <div class="flow-body">
+            <h3>Search Confluence (optional)</h3>
+            <p>Extracts keywords from the issue description and searches your Confluence spaces for related documentation. Feeds relevant pages into the AI context.</p>
+          </div>
+        </div>
+
+        <div class="flow-item">
+          <div class="flow-num">03</div>
+          <div class="flow-body">
+            <h3>Analyze with Claude AI</h3>
+            <p>Sends the issue details to Claude via Anthropic API (or AWS Bedrock). The AI identifies affected components, estimates complexity, and drafts implementation steps using a <code>tool_use</code> agentic loop.</p>
+          </div>
+        </div>
+
+        <div class="flow-item">
+          <div class="flow-num">04</div>
+          <div class="flow-body">
+            <h3>Write analytical comment</h3>
+            <p>Posts a structured comment to the Jira issue: business context, affected objects/classes, implementation scope, complexity estimate. Marked with a configurable <code>[AI]</code> prefix to distinguish from human comments.</p>
+          </div>
+        </div>
+
+        <div class="flow-item">
+          <div class="flow-num">05</div>
+          <div class="flow-body">
+            <h3>Transition to Waiting + label</h3>
+            <p>Moves the issue to your configured <em>Waiting</em> status and applies the <code>ai-intake</code> label. Transition IDs are fully configurable in <code>config.yaml</code>.</p>
+          </div>
+        </div>
+
+        <div class="flow-item">
+          <div class="flow-num">06</div>
+          <div class="flow-body">
+            <h3>Notify with assignment buttons</h3>
+            <p>Sends a Telegram or Slack message with a summary and inline buttons — one per team member. You tap a name; Tansaku assigns the issue and moves it to <em>In Progress</em>. Zero manual Jira clicks.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Quickstart -->
+  <section id="quickstart">
+    <div class="container">
+      <div class="section-label">Quickstart</div>
+      <h2>Up and running in minutes</h2>
+
+      <div class="terminal">
+        <div class="terminal-header">
+          <span class="dot dot-red"></span>
+          <span class="dot dot-yellow"></span>
+          <span class="dot dot-green"></span>
+          <span class="terminal-label">bash</span>
+        </div>
+        <span class="comment"># 1. Install</span><br>
+        <span class="prompt">$ </span>git clone https://github.com/pawellach/tansaku &amp;&amp; cd tansaku<br>
+        <span class="prompt">$ </span>pip install -r requirements.txt &amp;&amp; pip install -e .<br>
+        <br>
+        <span class="comment"># 2. Configure</span><br>
+        <span class="prompt">$ </span>cp config.example.yaml config.yaml<br>
+        <span class="comment"># Edit config.yaml — set Jira URL, project key, API keys</span><br>
+        <br>
+        <span class="comment"># 3. Verify connections</span><br>
+        <span class="prompt">$ </span>tansaku setup<br>
+        <span class="ok">  ✓ Jira connected (42 open issues in PROJ)</span><br>
+        <span class="ok">  ✓ Anthropic API reachable</span><br>
+        <span class="ok">  ✓ Telegram bot active</span><br>
+        <br>
+        <span class="comment"># 4. Run (dry-run first)</span><br>
+        <span class="prompt">$ </span>tansaku run --dry-run<br>
+        <span class="dim">  → found 3 new issues, analysis preview below...</span><br>
+        <span class="prompt">$ </span>tansaku run<br>
+        <span class="ok">  ✓ processed PROJ-231 → Waiting, notification sent</span>
+      </div>
+
+      <div class="install-grid">
+        <div class="install-option">
+          <h3>🐙 GitHub Actions <span style="color:var(--green);font-size:12px">recommended</span></h3>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:12px">Fork the repo, add 3 secrets, done. Runs Mon–Fri on schedule.</p>
+          <div class="terminal" style="padding:12px 16px;font-size:12px">
+            <span class="comment"># Add to GitHub Secrets:</span><br>
+            <span class="hi">JIRA_API_TOKEN</span><br>
+            <span class="hi">ANTHROPIC_API_KEY</span><br>
+            <span class="hi">TELEGRAM_BOT_TOKEN</span><br>
+            <span class="hi">TELEGRAM_CHAT_ID</span>
+          </div>
+        </div>
+        <div class="install-option">
+          <h3>🖥️ Any server / shared hosting</h3>
+          <p style="font-size:14px;color:var(--muted);margin-bottom:12px">One-line install, then add to cron.</p>
+          <div class="terminal" style="padding:12px 16px;font-size:12px">
+            <span class="comment"># One-line install</span><br>
+            <span class="prompt">$ </span><span class="hi">curl -sSL</span> .../install.sh | bash<br>
+            <br>
+            <span class="comment"># Add to crontab</span><br>
+            <span class="dim">3 9,11,13,15 * * 1-5</span><br>
+            <span class="dim">  cd /path/to/tansaku &amp;&amp; tansaku run</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Notifiers -->
+  <section id="notify">
+    <div class="container">
+      <div class="section-label">Notifications</div>
+      <h2>Assign issues from your phone</h2>
+
+      <div class="notifier-grid">
+
+        <div class="notifier-card recommended">
+          <div class="notifier-icon">✈️</div>
+          <h3>Telegram</h3>
+          <p>Create a bot via @BotFather in 5 minutes. No server needed — polling mode works anywhere.</p>
+          <ul>
+            <li>Inline keyboard buttons</li>
+            <li>Works in private chat or group</li>
+            <li>Polling — no public URL required</li>
+            <li>Invite team members to group</li>
+          </ul>
+          <div class="tg-mock">
+            <div class="tg-msg">
+              <div class="tg-bot-name">Tansaku Bot</div>
+              <div class="tg-text">
+                <strong>PROJ-231</strong> — Payment gateway timeout on checkout<br>
+                <span style="color:#6B7280;font-size:12px">Reporter: Alice Chen · Complexity: Medium</span><br><br>
+                Affects: <code style="color:#7CB8FF;background:rgba(124,184,255,0.1);padding:1px 4px;border-radius:3px">PaymentService.cls</code>, <code style="color:#7CB8FF;background:rgba(124,184,255,0.1);padding:1px 4px;border-radius:3px">CheckoutController</code><br>
+                Scope: check timeout config + retry logic
+              </div>
+              <div class="tg-buttons">
+                <span class="tg-btn">Alice</span>
+                <span class="tg-btn">Bob</span>
+                <span class="tg-btn" style="background:#1E3A2F;color:#4ADE80;">✓ Charlie</span>
+                <span class="tg-btn">Skip</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="notifier-card">
+          <div class="notifier-icon">💬</div>
+          <h3>Slack</h3>
+          <p>Post to any channel with Block Kit buttons. Polling mode — no Slack Events API server required.</p>
+          <ul>
+            <li>Block Kit interactive buttons</li>
+            <li>Post to any channel or DM</li>
+            <li>Works on free Slack workspaces</li>
+            <li>Polling via conversations.replies</li>
+          </ul>
+          <div class="terminal" style="margin-top:20px;padding:12px 16px;font-size:12px">
+            <span class="comment"># config.yaml</span><br>
+            <span class="hi">notification:</span><br>
+            &nbsp;&nbsp;<span class="hi">channel: </span><span class="ok">"slack"</span><br>
+            &nbsp;&nbsp;<span class="hi">slack:</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="hi">bot_token: </span><span class="ok">"${SLACK_BOT_TOKEN}"</span><br>
+            &nbsp;&nbsp;&nbsp;&nbsp;<span class="hi">channel: </span><span class="ok">"#intake"</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- Config -->
+  <section id="config">
+    <div class="container">
+      <div class="section-label">Configuration</div>
+      <h2>One YAML file, everything configurable</h2>
+      <pre class="yaml"><span class="yaml-key">jira</span>:
+  <span class="yaml-key">base_url</span>: <span class="yaml-val">"https://yourcompany.atlassian.net"</span>
+  <span class="yaml-key">email</span>:    <span class="yaml-val">"you@company.com"</span>
+  <span class="yaml-key">api_token</span>: <span class="yaml-env">"${JIRA_API_TOKEN}"</span>    <span class="yaml-comment"># env var — never hardcode</span>
+  <span class="yaml-key">project</span>:  <span class="yaml-val">"PROJ"</span>
+
+<span class="yaml-key">anthropic</span>:
+  <span class="yaml-key">api_key</span>: <span class="yaml-env">"${ANTHROPIC_API_KEY}"</span>
+  <span class="yaml-key">model</span>:   <span class="yaml-val">"claude-opus-4-5-20251101"</span>
+
+<span class="yaml-key">notification</span>:
+  <span class="yaml-key">channel</span>: <span class="yaml-val">"telegram"</span>           <span class="yaml-comment"># "telegram" | "slack" | "none"</span>
+  <span class="yaml-key">telegram</span>:
+    <span class="yaml-key">bot_token</span>: <span class="yaml-env">"${TELEGRAM_BOT_TOKEN}"</span>
+    <span class="yaml-key">chat_id</span>:   <span class="yaml-env">"${TELEGRAM_CHAT_ID}"</span>
+
+<span class="yaml-key">intake</span>:
+  <span class="yaml-key">auto_close_days</span>: <span class="yaml-val">5</span>
+  <span class="yaml-key">max_batch</span>:       <span class="yaml-val">5</span>
+  <span class="yaml-key">label</span>:           <span class="yaml-val">"ai-intake"</span>
+  <span class="yaml-key">language</span>:        <span class="yaml-val">"en"</span>   <span class="yaml-comment"># "en" or "pl"</span>
+  <span class="yaml-key">transitions</span>:
+    <span class="yaml-key">waiting</span>:     <span class="yaml-val">"41"</span>
+    <span class="yaml-key">in_progress</span>: <span class="yaml-val">"21"</span>
+    <span class="yaml-key">rejected</span>:    <span class="yaml-val">"61"</span>
+
+<span class="yaml-key">confluence</span>:
+  <span class="yaml-key">enabled</span>: <span class="yaml-val">true</span>
+  <span class="yaml-key">spaces</span>: [<span class="yaml-val">"PROJ"</span>, <span class="yaml-val">"ENG"</span>]
+
+<span class="yaml-key">knowledge_base</span>: <span class="yaml-val">"./knowledge-base.json"</span>  <span class="yaml-comment"># optional domain rules</span>
+<span class="yaml-key">team</span>:           <span class="yaml-val">"./team.json"</span>             <span class="yaml-comment"># optional assignee map</span></pre>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section style="border-bottom:none">
+    <div class="container" style="text-align:center;padding:40px 0">
+      <div style="font-size:40px;margin-bottom:20px">探索</div>
+      <h2 style="margin-bottom:12px">Ready to automate your Jira triage?</h2>
+      <p style="color:var(--muted);margin-bottom:32px">Open source. Self-hostable. Works with any Jira Cloud instance.</p>
+      <div class="cta-group" style="justify-content:center">
+        <a href="https://github.com/pawellach/tansaku" class="btn-primary">View on GitHub →</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="container">
+    <div class="footer-brand">tansaku 探索 — by <a href="https://pawellach.github.io" style="color:var(--muted)">Paweł Lach</a></div>
+    <div class="footer-links">
+      <a href="https://github.com/pawellach/tansaku">GitHub</a>
+      <a href="https://github.com/pawellach/tansaku/blob/master/README.md">Docs</a>
+      <a href="https://github.com/pawellach/tansaku/blob/master/config.example.yaml">Config</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
