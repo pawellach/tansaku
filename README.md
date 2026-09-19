@@ -31,7 +31,12 @@ cp config.example.yaml config.yaml
 
 # 3. Set secrets
 export JIRA_API_TOKEN=your_jira_api_token
-export ANTHROPIC_API_KEY=sk-ant-...
+# Pick one AI provider:
+export ANTHROPIC_API_KEY=sk-ant-...          # Anthropic direct
+# export AWS_ACCESS_KEY_ID=...              # AWS Bedrock
+# export AWS_SECRET_ACCESS_KEY=...
+# export AWS_DEFAULT_REGION=us-east-1
+# export OPENAI_API_KEY=sk-...             # OpenAI
 export TELEGRAM_BOT_TOKEN=...   # if using Telegram
 export TELEGRAM_CHAT_ID=...
 
@@ -52,6 +57,22 @@ curl -sSL https://raw.githubusercontent.com/pawellach/tansaku/master/install.sh 
 
 ---
 
+## AI Providers
+
+Tansaku works with any of the following AI providers — set `ai.provider` in `config.yaml`:
+
+| Provider | Config key | Env vars needed | Example model |
+|---|---|---|---|
+| **Anthropic** (direct) | `provider: anthropic` | `ANTHROPIC_API_KEY` | `claude-opus-4-5-20251101` |
+| **AWS Bedrock** | `provider: bedrock` | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` + `AWS_DEFAULT_REGION` | `anthropic.claude-opus-4-5-20251101` |
+| **OpenAI** | `provider: openai` | `OPENAI_API_KEY` | `gpt-4o` |
+
+> **Bedrock tip:** on EC2/ECS/Lambda with an IAM role, omit `aws_access_key` and `aws_secret_key` — credentials are picked up automatically from the instance role.
+>
+> **OpenAI:** install the extra package first: `pip install openai`
+
+---
+
 ## Commands
 
 | Command | Description |
@@ -60,7 +81,7 @@ curl -sSL https://raw.githubusercontent.com/pawellach/tansaku/master/install.sh 
 | `tansaku run --dry-run` | Preview without writing to Jira |
 | `tansaku run --ticket PROJ-123` | Process a single ticket |
 | `tansaku test PROJ-123` | Dry-run for one ticket |
-| `tansaku setup` | Verify Jira, Anthropic, and notification connections |
+| `tansaku setup` | Verify Jira, AI provider, and notification connections |
 
 ---
 

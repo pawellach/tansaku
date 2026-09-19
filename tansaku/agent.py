@@ -1,11 +1,9 @@
-"""Core agentic loop: Anthropic Messages API + Jira tool_use."""
+"""Core agentic loop — supports Anthropic, AWS Bedrock, and OpenAI."""
 
 from __future__ import annotations
 
 import json
 from typing import Any
-
-import anthropic
 
 from .jira_client import JiraClient
 from .confluence_client import ConfluenceClient
@@ -81,6 +79,46 @@ TOOLS = [
     },
 ]
 
+# OpenAI function-calling format (converted from Anthropic tool format)
+_OPENAI_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": t["name"],
+            "description": t["description"],
+            "parameters": t["input_schema"],
+        },
+    }
+    for t in TOOLS
+]
+
+
+def build_client(ai_cfg: dict):
+    """Return (client, provider_name) for the configured AI provider."""
+    provider = ai_cfg.get("provider", "anthropic")
+
+    if provider == "anthropic":
+        from anthropic import Anthropic
+        return Anthropic(api_key=ai_cfg["api_key"]), "anthropic"
+
+    if provider == "bedrock":
+        from anthropic import AnthropicBedrock
+        client = AnthropicBedrock(
+            aws_access_key=ai_cfg.get("aws_access_key") or None,
+            aws_secret_key=ai_cfg.get("aws_secret_key") or None,
+            aws_region=ai_cfg.get("aws_region", "us-east-1"),
+        )
+        return client, "bedrock"
+
+    if provider == "openai":
+        try:
+            from openai import OpenAI
+        except ImportError:
+            raise ImportError("openai package required: pip install openai")
+        return OpenAI(api_key=ai_cfg["api_key"]), "openai"
+
+    raise ValueError(f"Unknown AI provider '{provider}'. Choose: anthropic | bedrock | openai")
+
 
 class IntakeAgent:
     def __init__(self, cfg: dict, dry_run: bool = False, verbose: bool = True):
@@ -103,10 +141,10 @@ class IntakeAgent:
             spaces=conf_cfg.get("spaces", []),
         ) if conf_cfg.get("enabled", True) else None
 
-        ant_cfg = cfg.get("anthropic", {})
-        self.anthropic = anthropic.Anthropic(api_key=ant_cfg["api_key"])
-        self.model = ant_cfg.get("model", "claude-opus-4-5-20251101")
-        self.max_tokens = ant_cfg.get("max_tokens", 8096)
+        ai_cfg = cfg.get("ai", cfg.get("anthropic", {}))  # support legacy "anthropic:" key
+        self._client, self._provider = build_client(ai_cfg)
+        self.model = ai_cfg.get("model", _default_model(self._provider))
+        self.max_tokens = ai_cfg.get("max_tokens", 8096)
 
         intake_cfg = cfg.get("intake", {})
         self.label = intake_cfg.get("label", "ai-intake")
@@ -140,7 +178,6 @@ class IntakeAgent:
         )
 
     def _execute_tool(self, name: str, inputs: dict) -> Any:
-        """Execute a tool call. Write ops are skipped in dry_run mode."""
         if name == "search_jira_issues":
             fields = inputs.get("fields", ["summary", "description", "status", "reporter", "labels", "comment"])
             return self.jira.search(inputs["jql"], fields)
@@ -180,21 +217,31 @@ class IntakeAgent:
         return {"error": f"Unknown tool: {name}"}
 
     def run(self, ticket_key: str | None = None) -> dict:
-        """Run the intake agent. Returns summary dict."""
         intake_cfg = self.cfg.get("intake", {})
         project = self.cfg.get("jira", {}).get("project", "PROJ")
 
         system = get_system_prompt(self.language)
-        # Inject knowledge base facts if available
         facts = self.knowledge_base.get("facts", [])
         if facts:
             system += "\n\nProject-specific rules:\n" + "\n".join(f"- {f}" for f in facts)
 
-        messages = [{"role": "user", "content": self._build_user_message(ticket_key, project, intake_cfg)}]
+        user_msg = self._build_user_message(ticket_key, project, intake_cfg)
         actions: list[dict] = []
 
+        if self._provider in ("anthropic", "bedrock"):
+            return self._run_anthropic(system, user_msg, actions)
+        if self._provider == "openai":
+            return self._run_openai(system, user_msg, actions)
+
+        raise RuntimeError(f"No runner for provider: {self._provider}")
+
+    # ── Anthropic / Bedrock loop (identical API) ──────────────────────────────
+
+    def _run_anthropic(self, system: str, user_msg: str, actions: list) -> dict:
+        messages = [{"role": "user", "content": user_msg}]
+
         for _ in range(25):
-            response = self.anthropic.messages.create(
+            response = self._client.messages.create(
                 model=self.model,
                 max_tokens=self.max_tokens,
                 system=system,
@@ -226,3 +273,49 @@ class IntakeAgent:
                 break
 
         return {"status": "max_iterations", "actions": actions}
+
+    # ── OpenAI loop ───────────────────────────────────────────────────────────
+
+    def _run_openai(self, system: str, user_msg: str, actions: list) -> dict:
+        messages = [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user_msg},
+        ]
+
+        for _ in range(25):
+            response = self._client.chat.completions.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                tools=_OPENAI_TOOLS,
+                tool_choice="auto",
+                messages=messages,
+            )
+
+            msg = response.choices[0].message
+            messages.append(msg)
+
+            if not msg.tool_calls:
+                return {"status": "ok", "summary": msg.content or "", "actions": actions}
+
+            for tc in msg.tool_calls:
+                name = tc.function.name
+                inputs = json.loads(tc.function.arguments)
+                self._log(f"  → {name}({json.dumps(inputs)[:80]})")
+                result = self._execute_tool(name, inputs)
+                actions.append({"tool": name, "input": inputs, "result": result})
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tc.id,
+                    "content": json.dumps(result, ensure_ascii=False),
+                })
+
+        return {"status": "max_iterations", "actions": actions}
+
+
+def _default_model(provider: str) -> str:
+    defaults = {
+        "anthropic": "claude-opus-4-5-20251101",
+        "bedrock": "anthropic.claude-opus-4-5-20251101",
+        "openai": "gpt-4o",
+    }
+    return defaults.get(provider, "claude-opus-4-5-20251101")

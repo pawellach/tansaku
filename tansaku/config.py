@@ -76,8 +76,21 @@ def validate_config(cfg: dict) -> list[str]:
     if not jira.get("project"):
         errors.append("jira.project is required")
 
-    anthropic = cfg.get("anthropic", {})
-    if not anthropic.get("api_key"):
-        errors.append("anthropic.api_key missing — set ANTHROPIC_API_KEY env var")
+    ai = cfg.get("ai", cfg.get("anthropic", {}))  # support legacy "anthropic:" key
+    provider = ai.get("provider", "anthropic")
+    if provider == "anthropic":
+        if not ai.get("api_key"):
+            errors.append("ai.api_key missing — set ANTHROPIC_API_KEY env var")
+    elif provider == "bedrock":
+        # Credentials may also come from IAM role / env — only warn if explicit keys are half-set
+        has_key = bool(ai.get("aws_access_key"))
+        has_secret = bool(ai.get("aws_secret_key"))
+        if has_key != has_secret:
+            errors.append("ai.aws_access_key and ai.aws_secret_key must both be set (or both omitted for IAM role)")
+    elif provider == "openai":
+        if not ai.get("api_key"):
+            errors.append("ai.api_key missing — set OPENAI_API_KEY env var")
+    else:
+        errors.append(f"ai.provider '{provider}' unknown — choose: anthropic | bedrock | openai")
 
     return errors

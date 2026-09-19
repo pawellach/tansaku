@@ -4,13 +4,37 @@ jira:
   api_token: "${JIRA_API_TOKEN}"
   project: "PROJ"
 
-anthropic:
+# ── AI Provider ───────────────────────────────────────────────────────────────
+# Choose one provider. Uncomment the block you want to use.
+
+# Option A: Anthropic API (direct)
+ai:
+  provider: "anthropic"
   api_key: "${ANTHROPIC_API_KEY}"
   model: "claude-opus-4-5-20251101"
   max_tokens: 8096
 
+# Option B: AWS Bedrock (use if you have AWS but no direct Anthropic API key)
+# ai:
+#   provider: "bedrock"
+#   aws_access_key: "${AWS_ACCESS_KEY_ID}"
+#   aws_secret_key: "${AWS_SECRET_ACCESS_KEY}"
+#   aws_region: "${AWS_DEFAULT_REGION}"   # e.g. "us-east-1" or "eu-central-1"
+#   model: "anthropic.claude-opus-4-5-20251101"   # note the "anthropic." prefix
+#   max_tokens: 8096
+#   # Tip: if running on EC2/ECS/Lambda with an IAM role,
+#   # omit aws_access_key and aws_secret_key — credentials are picked up automatically.
+
+# Option C: OpenAI
+# ai:
+#   provider: "openai"
+#   api_key: "${OPENAI_API_KEY}"
+#   model: "gpt-4o"
+#   max_tokens: 4096
+
+# ── Notifications ─────────────────────────────────────────────────────────────
 notification:
-  channel: "telegram"   # "telegram" or "slack" or "none"
+  channel: "telegram"   # "telegram" | "slack" | "none"
 
   telegram:
     bot_token: "${TELEGRAM_BOT_TOKEN}"
@@ -20,6 +44,7 @@ notification:
     bot_token: "${SLACK_BOT_TOKEN}"
     channel: "#intake"
 
+# ── Intake behaviour ──────────────────────────────────────────────────────────
 intake:
   auto_close_days: 5
   max_batch: 5
@@ -36,7 +61,7 @@ intake:
     - "In test"
     - "In Progress"
 
-  language: "en"   # "en" or "pl" — language for AI comments
+  language: "en"   # "en" or "pl"
 
 confluence:
   enabled: true
@@ -44,9 +69,8 @@ confluence:
     - "PROJ"
     - "ENG"
 
-# Optional: path to a JSON file with domain-specific rules.
-# Copy knowledge-base.example.json and edit.
+# Optional: domain-specific rules file (copy knowledge-base.example.json)
 knowledge_base: "./knowledge-base.json"
 
-# Optional: path to a JSON file mapping keywords → team members.
+# Optional: team keyword → assignee mapping
 team: "./team.json"
