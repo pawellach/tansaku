@@ -1,9 +1,10 @@
 name: Tansaku Intake
 
 on:
-  schedule:
-    # Mon–Fri, every 2h during business hours UTC
-    - cron: '0 7,9,11,13,15 * * 1-5'
+  # Schedule disabled — this repo is a whitelabel template.
+  # Fork and configure secrets before enabling the cron below.
+  # schedule:
+  #   - cron: '0 7,9,11,13,15 * * 1-5'
   workflow_dispatch:
     inputs:
       dry_run:
