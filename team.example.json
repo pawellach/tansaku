@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "version": "1.0",
+    "description": "Team configuration for Tansaku. Copy to team.json and edit. Gitignored — keep real names/hours private.",
+    "last_updated": "2026-09-27"
+  },
+  "sprint_capacity": {
+    "note": "Net hours available per sprint (after meetings, review, etc.).",
+    "members": [
+      {
+        "role": "tech_lead",
+        "name": "Tech Lead",
+        "hours_per_sprint": 40,
+        "note": "Tasks only — not available for full feature modules"
+      },
+      {
+        "role": "team_lead",
+        "name": "Team Lead",
+        "hours_per_sprint": 20,
+        "note": "Reduced due to coordination overhead"
+      },
+      {
+        "role": "developer",
+        "name": "Developer A",
+        "hours_per_sprint": 60
+      },
+      {
+        "role": "developer",
+        "name": "Developer B",
+        "hours_per_sprint": 60
+      }
+    ],
+    "estimation_scale": {
+      "format": "[Xh AI+human]",
+      "tiers": [
+        { "label": "config",     "range_h": [0.5, 2],  "examples": ["config change", "label/field rename", "single validation rule"] },
+        { "label": "simple",     "range_h": [2, 8],    "examples": ["small Apex fix", "LWC prop tweak", "SOQL report"] },
+        { "label": "medium",     "range_h": [8, 20],   "examples": ["new LWC component", "Apex service class", "multi-step flow"] },
+        { "label": "complex",    "range_h": [20, 60],  "examples": ["new integration, trigger chain rework, new CPQ rule set"] },
+        { "label": "new_module", "range_h": [60, null],"examples": ["greenfield object + service + LWC + tests"] }
+      ]
+    }
+  },
+  "module_assignees": [
+    {
+      "keywords": ["quote", "pricing", "cpq", "subscription", "price rule"],
+      "suggested_role": "CPQ specialist",
+      "assignee_name": "Developer A"
+    },
+    {
+      "keywords": ["ui", "lwc", "component", "store", "frontend", "portal"],
+      "suggested_role": "Frontend developer",
+      "assignee_name": "Developer B"
+    },
+    {
+      "keywords": ["trigger", "apex", "service", "backend", "realization", "realizacja"],
+      "suggested_role": "Backend developer",
+      "assignee_name": "Tech Lead"
+    }
+  ]
+}
