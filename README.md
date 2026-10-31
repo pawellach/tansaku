@@ -17,6 +17,20 @@ Tansaku runs on a schedule and automatically triages newly created Jira issues:
 
 ---
 
+## Production Pilot
+
+Tansaku ran as a production pilot at **Symfonia** (ERP/SaaS, 150+ Salesforce users) from September 21 to October 30, 2026.
+
+**Results:**
+- 269 Jira issues received automated triage analysis (comments, priority assessment, routing suggestions)
+- 190 issues tagged with `ai-intake` label (precise tracker, introduced mid-pilot)
+- 75 issues progressed to active development branches — full pipeline: intake → analysis → implementation
+- Pilot scope: SAL project, ~40 issues/month intake volume
+
+> The pilot concluded October 30. Numbers reflect the full 40-day run.
+
+---
+
 ## Quickstart
 
 ```bash
@@ -172,6 +186,24 @@ Copy `knowledge-base.example.json` to `knowledge-base.json` and add project-spec
 ## Architecture
 
 See [docs/architecture.md](docs/architecture.md).
+
+---
+
+## Writing
+
+Articles related to this project:
+
+**English (Medium):**
+- [AI Agents Are Learning to Decide. Literally.](https://medium.com/@pawellach/ai-agents-are-learning-to-decide-literally-f07923a4c85e) — the decision architecture behind tansaku
+
+**Polish (Substack):**
+- Search [pawellach.substack.com](https://pawellach.substack.com) for "intake" or "triage" for related Polish-language posts
+
+---
+
+## Author
+
+Built by [Paweł Lach](https://pawellach.github.io) — PM and AI practitioner with 15+ years in digital transformation. This tool solves a real problem from my daily work managing a 40+ issue/month Salesforce delivery backlog.
 
 ---
 
