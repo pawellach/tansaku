@@ -212,6 +212,8 @@ Copy `knowledge-base.example.json` to `knowledge-base.json` and add project-spec
 
 See [docs/architecture.md](docs/architecture.md).
 
+The product roadmap covers the three-surface knowledge model, specialist delivery agents, UAT handoffs, and Docker operations: [ROADMAP.md](ROADMAP.md).
+
 ---
 
 ## Writing
