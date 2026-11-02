@@ -1,0 +1,26 @@
+services:
+  tansaku:
+    build:
+      context: .
+    image: tansaku:local
+    env_file:
+      - .env
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./team.json:/app/team.json:ro
+      - ./knowledge-base.json:/app/knowledge-base.json:ro
+    command: ["tansaku", "run"]
+
+  # One-shot diagnostics without changing Jira data.
+  setup:
+    profiles: ["setup"]
+    build:
+      context: .
+    image: tansaku:local
+    env_file:
+      - .env
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./team.json:/app/team.json:ro
+      - ./knowledge-base.json:/app/knowledge-base.json:ro
+    command: ["tansaku", "setup"]

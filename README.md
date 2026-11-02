@@ -15,6 +15,14 @@ Tansaku runs on a schedule and automatically triages newly created Jira issues:
 5. Sends a notification with **inline assignment buttons** (Telegram) or **Block Kit buttons** (Slack)
 6. Waits for your decision — assigns and moves to **In Progress** automatically
 
+### The differentiator: assignment where the team already works
+
+The analyst does the expensive context gathering, but a human still makes the ownership decision. Tansaku sends the result to Telegram with one-click assignment buttons, then applies the selected assignee and Jira transition.
+
+![Tansaku Telegram assignment notification](docs/assets/telegram-assignment.svg)
+
+The image is a safe portfolio demo with synthetic ticket and team data; it does not contain real Jira or Telegram content.
+
 ---
 
 ## Production Pilot
@@ -68,6 +76,23 @@ tansaku run
 ```bash
 curl -sSL https://raw.githubusercontent.com/pawellach/tansaku/master/install.sh | bash
 ```
+
+## Docker Compose
+
+Docker is the fastest self-hosted path when Python setup should stay out of the user's way:
+
+```bash
+cp config.example.yaml config.yaml
+cp team.example.json team.json
+cp knowledge-base.example.json knowledge-base.json
+cp .env.example .env  # or create .env with the variables below
+
+docker compose build
+docker compose --profile setup run --rm setup
+docker compose run --rm tansaku
+```
+
+The default `tansaku` service is a one-shot run. Schedule it with the host's cron, a CI scheduler, or an orchestrator. Secrets are read from `.env` and the local configuration files are mounted read-only into the container.
 
 ---
 
