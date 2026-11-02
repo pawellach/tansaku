@@ -161,3 +161,46 @@ Track these on representative tickets rather than measuring document or agent co
 5. Add OKF review workflow and controlled Confluence publication.
 6. Harden Docker operation and add CI smoke tests.
 7. Measure the workflow on a small production pilot before adding semantic search or more agent types.
+
+## Next sprint — 9–13 November 2026
+
+This is a dry-run and code-quality sprint. Do not connect to or mutate a live Jira or Telegram environment.
+
+### Monday — reproducible local verification
+
+- Install project dependencies in a clean virtual environment.
+- Run the complete unit test suite without live credentials.
+- Validate PowerShell Docker helper syntax and Compose configuration.
+- Document the exact dry-run command and expected output.
+
+### Tuesday — specialist-agent contract
+
+- Define the first specialist profile, starting with a generic developer agent.
+- Specify inputs, allowed tools, workspace/branch boundary, test command, and output schema.
+- Add explicit stop conditions for missing business decisions and unsafe deployment requests.
+
+### Wednesday — UAT handoff vertical slice
+
+- Convert test results into a requester-facing UAT comment.
+- Require numbered steps, expected results, test data, evidence, limitations, and PASS/FAIL response format.
+- Add a mocked test covering analysis → implementation summary → UAT comment.
+
+### Thursday — knowledge architecture seed
+
+- Add a minimal agent-knowledge index and one OKF-style example document.
+- Link one business rule to one implementation component and one test.
+- Define repository-to-Confluence publication metadata without implementing blind mirroring.
+
+### Friday — portfolio and release hygiene
+
+- Review README, GitHub Pages showcase, roadmap, Docker quickstart, and screenshots together.
+- Add CI checks for Python compilation, unit tests, SVG/XML validity, and PowerShell parse validation.
+- Record remaining gaps and decide whether the next sprint should focus on specialist execution or Confluence publication.
+
+### Sprint acceptance criteria
+
+- A clean checkout can reach a deterministic dry-run without live credentials.
+- The specialist-agent contract is documented and testable.
+- A mock implementation produces a complete UAT handoff.
+- At least one knowledge relation is represented end-to-end.
+- CI catches broken code, broken assets, or invalid operational instructions.
