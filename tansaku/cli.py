@@ -4,6 +4,10 @@ from __future__ import annotations
 
 import sys
 import json
+import os
+from contextlib import contextmanager
+from datetime import datetime, timezone
+from pathlib import Path
 
 import click
 
@@ -150,25 +154,75 @@ def _maybe_notify(agent: IntakeAgent, cfg: dict, result: dict, ticket_key: str |
         return
 
     transition_id = str((cfg.get("intake", {}) or {}).get("transitions", {}).get("in_progress", "21"))
+    for key in keys:
+        decision = None
+        try:
+            with _ticket_lock(cfg, key):
+                current = agent.jira.get_issue(key)
+                if current.get("assignee"):
+                    _audit(cfg, key, "skipped", reason="already_assigned")
+                    click.echo(f"  {key}: skipped; Jira already has an assignee.")
+                    continue
+                if current.get("status", "").lower() in {"done", "closed", "resolved", "cancelled"}:
+                    _audit(cfg, key, "skipped", reason=f"status={current.get('status')}")
+                    click.echo(f"  {key}: skipped; Jira status is {current.get('status')}.")
+                    continue
+
+                msg_id = notifier.send_intake_summary(key, summary, assignee_options)
+                decision = notifier.wait_for_decision(msg_id, timeout=120)
+                if decision.timed_out or decision.chosen == "skip":
+                    _audit(cfg, key, "skipped", decision=decision.chosen, reason="timeout_or_skip")
+                    click.echo(f"  {key}: no assignment received (timeout or skip).")
+                    continue
+
+                label = assignees_by_value.get(decision.chosen, decision.chosen)
+                account_id = account_ids_by_value.get(decision.chosen) or agent.jira.lookup_account_id(decision.chosen)
+                if not account_id:
+                    raise RuntimeError(f"Could not resolve Jira account for '{decision.chosen}'")
+
+                agent.jira.assign(key, account_id)
+                agent.jira.transition(key, transition_id)
+                _audit(cfg, key, "completed", decision=decision.chosen, account_id=account_id,
+                       transition_id=transition_id)
+                click.echo(f"  {key}: assigned to {label}; transitioned to In Progress.")
+                notifier.send_confirmation(key, label, "In Progress")
+        except Exception as e:
+            _audit(cfg, key, "failed", decision=decision.chosen if decision else None, reason=str(e))
+            click.echo(f"  {key}: notification/assignment error: {e}", err=True)
+
+
+@contextmanager
+def _ticket_lock(cfg: dict, ticket_key: str):
+    """Acquire a process-safe per-ticket lock without adding a dependency."""
+    lock_dir = Path((cfg.get("intake", {}) or {}).get("lock_dir", ".tansaku-locks"))
+    lock_dir.mkdir(parents=True, exist_ok=True)
+    lock_path = lock_dir / f"{ticket_key}.lock"
     try:
-        for key in keys:
-            msg_id = notifier.send_intake_summary(key, summary, assignee_options)
-            decision = notifier.wait_for_decision(msg_id, timeout=120)
-            if decision.timed_out or decision.chosen == "skip":
-                click.echo(f"  {key}: no assignment received (timeout or skip).")
-                continue
+        fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        with os.fdopen(fd, "w", encoding="utf-8") as handle:
+            handle.write(f"pid={os.getpid()}\n")
+        yield
+    except FileExistsError:
+        raise RuntimeError(f"ticket lock already held: {ticket_key}")
+    finally:
+        try:
+            lock_path.unlink()
+        except FileNotFoundError:
+            pass
 
-            label = assignees_by_value.get(decision.chosen, decision.chosen)
-            account_id = account_ids_by_value.get(decision.chosen) or agent.jira.lookup_account_id(decision.chosen)
-            if not account_id:
-                raise RuntimeError(f"Could not resolve Jira account for '{decision.chosen}'")
 
-            agent.jira.assign(key, account_id)
-            agent.jira.transition(key, transition_id)
-            click.echo(f"  {key}: assigned to {label}; transitioned to In Progress.")
-            notifier.send_confirmation(key, label, "In Progress")
-    except Exception as e:
-        click.echo(f"  Notification error: {e}", err=True)
+def _audit(cfg: dict, ticket_key: str, outcome: str, **details) -> None:
+    """Append a redacted assignment decision to a local JSONL audit log."""
+    path = Path((cfg.get("intake", {}) or {}).get("assignment_audit_log", "tansaku-assignment-audit.jsonl"))
+    record = {
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "ticket": ticket_key,
+        "outcome": outcome,
+        **{k: v for k, v in details.items() if v is not None},
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 def _notification_ticket_keys(result: dict, ticket_key: str | None) -> list[str]:

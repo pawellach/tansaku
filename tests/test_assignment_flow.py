@@ -13,6 +13,9 @@ class FakeJira:
     def lookup_account_id(self, identifier):
         return "account-123" if identifier == "developer.a@example.com" else None
 
+    def get_issue(self, key):
+        return {"key": key, "status": "Waiting", "assignee": ""}
+
     def assign(self, key, account_id):
         self.assigned.append((key, account_id))
 

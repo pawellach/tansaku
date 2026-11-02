@@ -75,7 +75,8 @@ class JiraClient:
         """Get a single issue with all relevant fields."""
         fields = ["summary", "description", "comment", "reporter", "assignee",
                   "status", "labels", "issuetype", "priority", "components"]
-        return self.search(f"issue = {key}", fields, max_results=1)[0] if True else {}
+        issues = self.search(f"issue = {key}", fields, max_results=1)
+        return issues[0] if issues else {}
 
     # ── Writes ────────────────────────────────────────────────────────────────
 

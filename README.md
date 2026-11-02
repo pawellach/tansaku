@@ -23,6 +23,16 @@ The analyst does the expensive context gathering, but a human still makes the ow
 
 The image is a safe portfolio demo with synthetic ticket and team data; it does not contain real Jira or Telegram content.
 
+### Portfolio views
+
+The complete product loop is also shown in three additional views:
+
+| View | What it demonstrates |
+|---|---|
+| [Jira analysis](docs/assets/jira-analysis.svg) | AI comment, `Waiting` status, intake label, complexity and next step |
+| [UAT handoff](docs/assets/uat-handoff.svg) | Specialist-agent delivery summary, automated-test evidence and requester UAT steps |
+| [Docker self-hosting](docs/assets/docker-self-hosting.svg) | Low-friction setup, dry-run safety and one-shot production operation |
+
 ---
 
 ## Production Pilot
