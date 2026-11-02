@@ -228,6 +228,14 @@
     border-radius: 6px; cursor: pointer;
   }
 
+  /* Portfolio showcase */
+  .showcase-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+  .showcase-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .showcase-card img { display: block; width: 100%; height: auto; border-bottom: 1px solid var(--border); }
+  .showcase-card-body { padding: 18px 20px 20px; }
+  .showcase-card h3 { font-size: 16px; margin-bottom: 6px; }
+  .showcase-card p { color: var(--muted); font-size: 13px; }
+
   /* Install section */
   .install-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 32px; }
   .install-option {
@@ -267,6 +275,7 @@
       <a href="#how-it-works">How it works</a>
       <a href="#quickstart">Quickstart</a>
       <a href="#notify">Notifications</a>
+      <a href="#showcase">Showcase</a>
       <a href="#config">Config</a>
       <a href="https://github.com/pawellach/tansaku">GitHub</a>
     </div>
@@ -480,6 +489,29 @@
           </div>
         </div>
 
+      </div>
+    </div>
+  </section>
+
+  <!-- Portfolio showcase -->
+  <section id="showcase">
+    <div class="container">
+      <div class="section-label">Portfolio showcase</div>
+      <h2>From intake to UAT handoff</h2>
+      <p style="color:var(--muted);max-width:620px;margin-bottom:28px">These views show the complete delivery loop: AI analysis in Jira, human-readable UAT instructions, and a low-friction self-hosted Docker path.</p>
+      <div class="showcase-grid">
+        <a class="showcase-card" href="assets/jira-analysis.svg">
+          <img src="assets/jira-analysis.svg" alt="Jira issue with Tansaku AI analysis, Waiting status and intake label">
+          <div class="showcase-card-body"><h3>AI analysis in Jira</h3><p>Structured comment, scope, complexity and next assignment step.</p></div>
+        </a>
+        <a class="showcase-card" href="assets/uat-handoff.svg">
+          <img src="assets/uat-handoff.svg" alt="Tansaku UAT handoff with steps and automated test evidence">
+          <div class="showcase-card-body"><h3>UAT handoff</h3><p>Requester-facing test steps backed by automated-test evidence.</p></div>
+        </a>
+        <a class="showcase-card" href="assets/docker-self-hosting.svg">
+          <img src="assets/docker-self-hosting.svg" alt="Docker self-hosting quickstart for Tansaku">
+          <div class="showcase-card-body"><h3>Self-hosted Docker</h3><p>Setup, dry-run and one-shot operation from PowerShell.</p></div>
+        </a>
       </div>
     </div>
   </section>
