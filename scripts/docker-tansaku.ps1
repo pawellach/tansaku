@@ -18,12 +18,27 @@ function Invoke-Docker([string[]]$Arguments) {
     }
 }
 
+function Initialize-ExampleFile([string]$Target, [string]$Example) {
+    if (-not (Test-Path -LiteralPath $Target) -and (Test-Path -LiteralPath $Example)) {
+        Copy-Item -LiteralPath $Example -Destination $Target
+        return $true
+    }
+    return $false
+}
+
 if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     throw "Docker CLI is not on PATH. Start a new PowerShell after installing Docker Desktop."
 }
 
-if (-not (Test-Path -LiteralPath ".env")) {
-    throw "Missing .env. Run: Copy-Item .env.example .env, then fill in Jira/AI/Telegram values."
+$initialized = @()
+if (Initialize-ExampleFile ".env" ".env.example") { $initialized += ".env" }
+if (Initialize-ExampleFile "config.yaml" "config.example.yaml") { $initialized += "config.yaml" }
+if (Initialize-ExampleFile "team.json" "team.example.json") { $initialized += "team.json" }
+if (Initialize-ExampleFile "knowledge-base.json" "knowledge-base.example.json") { $initialized += "knowledge-base.json" }
+
+if ($initialized.Count -gt 0) {
+    Write-Host "Initialized missing files: $($initialized -join ', ')"
+    throw "Edit .env, config.yaml, team.json, and knowledge-base.json, then run the script again. No Docker command was executed."
 }
 
 $dockerReady = $true

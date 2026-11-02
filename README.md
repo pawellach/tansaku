@@ -97,8 +97,9 @@ The default `tansaku` service is a one-shot run. Schedule it with the host's cro
 For Windows/Docker Desktop, use the checked-in PowerShell helper:
 
 ```powershell
-Copy-Item .env.example .env
-# Edit .env, config.yaml, team.json, and knowledge-base.json first
+# First run initializes missing local files and stops before Docker runs.
+.\scripts\docker-tansaku.ps1 -StartDockerDesktop -Build -Setup
+# After filling in the generated .env/config files:
 .\scripts\docker-tansaku.ps1 -StartDockerDesktop -Build -Setup
 .\scripts\docker-tansaku.ps1 -DryRun
 ```
