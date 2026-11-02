@@ -94,6 +94,15 @@ docker compose run --rm tansaku
 
 The default `tansaku` service is a one-shot run. Schedule it with the host's cron, a CI scheduler, or an orchestrator. Secrets are read from `.env` and the local configuration files are mounted read-only into the container.
 
+For Windows/Docker Desktop, use the checked-in PowerShell helper:
+
+```powershell
+Copy-Item .env.example .env
+# Edit .env, config.yaml, team.json, and knowledge-base.json first
+.\scripts\docker-tansaku.ps1 -StartDockerDesktop -Build -Setup
+.\scripts\docker-tansaku.ps1 -DryRun
+```
+
 ---
 
 ## AI Providers
@@ -179,6 +188,8 @@ print(j.get_transitions('PROJ-1'))
 2. Copy the bot token → `TELEGRAM_BOT_TOKEN`
 3. Get your chat ID: message [@userinfobot](https://t.me/userinfobot) → copy the ID → `TELEGRAM_CHAT_ID`
 4. Start a conversation with your bot (send `/start`)
+
+For end-to-end assignment, each member in `team.json` must provide either `jira_account_id`, `account_id`, or an exact Jira user email/name. When a button is selected, Tansaku resolves the account, assigns the Jira issue, transitions it to `In Progress`, and sends confirmation only after both Jira operations succeed.
 
 ---
 

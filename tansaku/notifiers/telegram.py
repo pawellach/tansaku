@@ -15,6 +15,7 @@ class TelegramNotifier(Notifier):
         self.token = bot_token
         self.chat_id = chat_id
         self._last_update_id = 0
+        self._pending_tickets: dict[str, str] = {}
 
     def _call(self, method: str, payload: dict) -> dict:
         url = TELEGRAM_API.format(token=self.token, method=method)
@@ -60,11 +61,14 @@ class TelegramNotifier(Notifier):
             "parse_mode": "Markdown",
             "reply_markup": {"inline_keyboard": rows},
         })
-        return str(result["message_id"])
+        message_id = str(result["message_id"])
+        self._pending_tickets[message_id] = ticket_key
+        return message_id
 
     def wait_for_decision(self, message_id: str, timeout: int = 300) -> DecisionResult:
         """Poll getUpdates every 5s until a callback_query matching our message arrives."""
         deadline = time.time() + timeout
+        expected_ticket = self._pending_tickets.get(str(message_id))
         while time.time() < deadline:
             updates = self._call("getUpdates", {
                 "offset": self._last_update_id + 1,
@@ -77,12 +81,18 @@ class TelegramNotifier(Notifier):
                 if not cq:
                     continue
                 data = cq.get("data", "")
+                parts = data.split(":", 2)
+                if (
+                    not data.startswith("assign:")
+                    or len(parts) != 3
+                    or expected_ticket is not None and parts[1] != expected_ticket
+                ):
+                    continue
                 # Acknowledge the button press
                 self._call("answerCallbackQuery", {"callback_query_id": cq["id"]})
-                if data.startswith("assign:"):
-                    parts = data.split(":", 2)
-                    value = parts[2] if len(parts) == 3 else "skip"
-                    return DecisionResult(chosen=value, raw_text=data)
+                self._pending_tickets.pop(str(message_id), None)
+                return DecisionResult(chosen=parts[2], raw_text=data)
+        self._pending_tickets.pop(str(message_id), None)
         return DecisionResult(chosen="skip", raw_text="", timed_out=True)
 
     def send_confirmation(self, ticket_key: str, assignee_label: str, status: str) -> None:

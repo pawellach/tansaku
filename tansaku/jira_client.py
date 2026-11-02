@@ -102,14 +102,26 @@ class JiraClient:
         result = self._get(f"/rest/api/3/issue/{key}/transitions")
         return [{"id": t["id"], "name": t["name"]} for t in result.get("transitions", [])]
 
-    def lookup_account_id(self, email: str) -> str | None:
-        """Look up accountId by email."""
-        result = self._get("/rest/api/3/user/search", {"query": email})
+    def lookup_account_id(self, identifier: str) -> str | None:
+        """Resolve an exact Jira account ID, email, or display name.
+
+        Jira Cloud may return partial matches from /user/search. Never select
+        the first partial match for an assignment decision.
+        """
+        if not identifier:
+            return None
+        result = self._get("/rest/api/3/user/search", {"query": identifier})
         users = result if isinstance(result, list) else []
         for u in users:
-            if u.get("emailAddress", "").lower() == email.lower():
+            if u.get("accountId") == identifier:
                 return u["accountId"]
-        return users[0]["accountId"] if users else None
+            if u.get("emailAddress", "").lower() == identifier.lower():
+                return u["accountId"]
+            if u.get("displayName", "").lower() == identifier.lower():
+                return u["accountId"]
+        if len(users) == 1:
+            return users[0].get("accountId")
+        return None
 
     def assign(self, key: str, account_id: str) -> None:
         self._put(f"/rest/api/3/issue/{key}/assignee", {"accountId": account_id})

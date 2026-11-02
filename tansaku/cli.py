@@ -38,7 +38,7 @@ def run(config_path: str, dry_run: bool, ticket: str | None, notify: bool):
     click.echo(f"\n{len(result.get('actions', []))} tool calls executed.")
 
     if notify and not dry_run and result.get("status") == "ok":
-        _maybe_notify(cfg, result, ticket)
+        _maybe_notify(agent, cfg, result, ticket)
 
     if result.get("status") != "ok":
         sys.exit(1)
@@ -115,27 +115,70 @@ def _load_or_exit(config_path: str) -> dict:
     return cfg
 
 
-def _maybe_notify(cfg: dict, result: dict, ticket_key: str | None) -> None:
+def _maybe_notify(agent: IntakeAgent, cfg: dict, result: dict, ticket_key: str | None) -> None:
     notifier = get_notifier(cfg)
     if notifier is None:
         return
 
     team_cfg = cfg.get("_team", {})
     members = team_cfg.get("members", []) if team_cfg else []
-    assignee_options = [{"label": m.get("name", m.get("email", "")), "value": m.get("email", "")}
-                        for m in members]
+    if not members:
+        members = (team_cfg.get("sprint_capacity", {}) or {}).get("members", [])
+
+    # The callback carries a stable operator-supplied identifier. Prefer an
+    # explicit account ID, then email, then display name for small teams.
+    assignee_options = []
+    assignees_by_value = {}
+    account_ids_by_value = {}
+    for member in members:
+        identifier = (member.get("jira_account_id") or member.get("account_id")
+                      or member.get("email") or member.get("name", "")).strip()
+        if not identifier:
+            continue
+        label = member.get("name") or member.get("email") or identifier
+        assignee_options.append({"label": label, "value": identifier})
+        assignees_by_value[identifier] = label
+        account_ids_by_value[identifier] = member.get("jira_account_id") or member.get("account_id")
     if not assignee_options:
-        assignee_options = [{"label": "Skip", "value": "skip"}]
+        click.echo("  Notification skipped: team.json has no Jira assignee identifiers.", err=True)
+        return
 
     summary = result.get("summary", "")[:600]
-    key = ticket_key or "batch"
+    keys = _notification_ticket_keys(result, ticket_key)
+    if not keys:
+        click.echo("  Notification skipped: no processed ticket key was found.", err=True)
+        return
+
+    transition_id = str((cfg.get("intake", {}) or {}).get("transitions", {}).get("in_progress", "21"))
     try:
-        msg_id = notifier.send_intake_summary(key, summary, assignee_options)
-        decision = notifier.wait_for_decision(msg_id, timeout=120)
-        if not decision.timed_out and decision.chosen != "skip":
-            click.echo(f"  Decision received: {decision.chosen}")
-            notifier.send_confirmation(key, decision.chosen, "In Progress")
-        else:
-            click.echo("  No decision received (timeout or skip).")
+        for key in keys:
+            msg_id = notifier.send_intake_summary(key, summary, assignee_options)
+            decision = notifier.wait_for_decision(msg_id, timeout=120)
+            if decision.timed_out or decision.chosen == "skip":
+                click.echo(f"  {key}: no assignment received (timeout or skip).")
+                continue
+
+            label = assignees_by_value.get(decision.chosen, decision.chosen)
+            account_id = account_ids_by_value.get(decision.chosen) or agent.jira.lookup_account_id(decision.chosen)
+            if not account_id:
+                raise RuntimeError(f"Could not resolve Jira account for '{decision.chosen}'")
+
+            agent.jira.assign(key, account_id)
+            agent.jira.transition(key, transition_id)
+            click.echo(f"  {key}: assigned to {label}; transitioned to In Progress.")
+            notifier.send_confirmation(key, label, "In Progress")
     except Exception as e:
         click.echo(f"  Notification error: {e}", err=True)
+
+
+def _notification_ticket_keys(result: dict, ticket_key: str | None) -> list[str]:
+    """Return unique issue keys touched by the agent, preserving action order."""
+    if ticket_key:
+        return [ticket_key]
+
+    keys = []
+    for action in result.get("actions", []):
+        key = (action.get("input") or {}).get("issue_key")
+        if key and key not in keys:
+            keys.append(key)
+    return keys

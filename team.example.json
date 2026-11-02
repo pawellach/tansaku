@@ -10,23 +10,27 @@
       {
         "role": "tech_lead",
         "name": "Tech Lead",
+        "email": "tech.lead@example.com",
         "hours_per_sprint": 40,
         "note": "Tasks only — not available for full feature modules"
       },
       {
         "role": "team_lead",
         "name": "Team Lead",
+        "email": "team.lead@example.com",
         "hours_per_sprint": 20,
         "note": "Reduced due to coordination overhead"
       },
       {
         "role": "developer",
         "name": "Developer A",
+        "email": "developer.a@example.com",
         "hours_per_sprint": 60
       },
       {
         "role": "developer",
         "name": "Developer B",
+        "email": "developer.b@example.com",
         "hours_per_sprint": 60
       }
     ],
